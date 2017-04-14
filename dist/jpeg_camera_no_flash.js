@@ -61,6 +61,7 @@
     };
 
     JpegCamera.prototype._is_ready = false;
+    JpegCamera.prototype._stream = null;
 
     JpegCamera.prototype.error = function(callback) {
       this.options.on_error = callback;
@@ -82,6 +83,10 @@
       return snapshot.get_stats(function(stats) {
         return callback.call(that, stats);
       });
+    };
+
+    JpegCamera.prototype.stop = function(){
+      this._engine_stop();
     };
 
     JpegCamera.prototype.capture = function(options) {
@@ -319,6 +324,7 @@
         };
         that = this;
         success = function(stream) {
+          that._stream = stream;
           that._remove_message();
           if (window.URL) {
             that.video.src = URL.createObjectURL(stream);
@@ -349,6 +355,8 @@
           return navigator.getUserMedia("video", success, failure);
         }
       };
+
+      JpegCameraHtml5.prototype._stream = null;
 
       JpegCameraHtml5.prototype._engine_play_shutter_sound = function() {
         var source;
@@ -439,6 +447,18 @@
           this.displayed_canvas = null;
         }
         return this.video_container.style.display = "block";
+      };
+
+      JpegCameraHtml5.prototype._engine_stop = function(){
+        this.video.src = "";
+        if( !this._stream ) return;
+        if( this._stream.stop ){
+          this._stream.stop();
+        }else{
+          this._stream.getTracks().forEach( function (track) {
+            track.stop();
+          });
+        }
       };
 
       JpegCameraHtml5.prototype._engine_upload = function(snapshot, api_url, csrf_token, timeout) {
